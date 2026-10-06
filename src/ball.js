@@ -29,6 +29,7 @@ export function createShot(spec) {
     hop: spec.hop ?? 0.48,
     bounceAt: spec.bounceAt ?? 0.5,
     delay: spec.delay ?? 0,
+    kind: spec.kind || 'flat',
     startTime: 0,
     progress: 0,
     bounced: false,

@@ -1,8 +1,8 @@
-import { tuning, currentTier, orderedWindows } from './tuning.js'
-import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js'
-import { planServe, buildPlayerShot, planReturn } from './ai.js'
-import { createActor, triggerAnim, updateActor } from './stickman.js'
-import { spawnHit, spawnWhiff, spawnBounce } from './fx.js'
+import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=11'
+import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=11'
+import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=11'
+import { createActor, triggerAnim, updateActor } from './stickman.js?v=11'
+import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=11'
 
 export function createSession() {
   return {
@@ -10,6 +10,7 @@ export function createSession() {
     timingErrors: [],
     rallyLengths: [],
     byTier: tuning.tiers.map(() => ({ wins: 0, losses: 0 })),
+    byKind: { flat: { seen: 0, lost: 0 }, float: { seen: 0, lost: 0 }, spin: { seen: 0, lost: 0 } },
   }
 }
 
@@ -23,8 +24,13 @@ export function createMatch(session, fx, audio) {
     target: 'player',
     rallyHits: 0,
     rallySpeed: 1,
-    message: 'ГОТОВ',
-    messageT: 0.9,
+    aiStamina: 1,
+    aiStaminaMax: 1,
+    aiStaminaShown: 1,
+    message: '3',
+    messageT: 1,
+    readyTick: 1,
+    count: 3,
     darken: 0,
     flash: 0,
     lastPoint: null,
@@ -54,23 +60,28 @@ export function createMatch(session, fx, audio) {
     match.trail = []
     match.rallyHits = 0
     match.rallySpeed = 1
+    match.spinsUsed = 0
+    refillStamina()
     match.playerSide = 'L'
     match.aiSide = 'R'
     match.tierAtStart = tuning.tierIndex
     match.player = createActor('player')
     match.ai = createActor('opponent')
-    beginReady()
+    beginReady(1)
   }
 
-  function beginReady() {
+  function beginReady(tick = 0.5) {
     match.phase = 'ready'
-    match.message = 'ГОТОВ'
-    match.messageT = 0.85
+    match.count = 3
+    match.message = '3'
+    match.readyTick = tick
+    match.messageT = tick
     match.shot = null
     match.pending = null
     match.trail = []
     match.rallyHits = 0
     match.rallySpeed = 1
+    refillStamina()
     match.ball = { tx: 0.46, ty: 1.5, h: 0.62 }
     triggerAnim(match.player, 'idle', 'L', match.simTime)
     triggerAnim(match.ai, 'idle', 'R', match.simTime)
@@ -79,7 +90,8 @@ export function createMatch(session, fx, audio) {
   function startServe() {
     match.rallyHits = 0
     match.rallySpeed = 1
-    const plan = planServe(currentTier())
+    refillStamina()
+    const plan = planServe(currentTier(), match.spinsUsed)
     match.aiSide = plan.side
     triggerAnim(match.ai, 'swing', plan.side, match.simTime)
     triggerAnim(match.player, 'idle', match.playerSide, match.simTime)
@@ -101,6 +113,10 @@ export function createMatch(session, fx, audio) {
     match.pending = null
     match.trail = []
     match.ball = sampleShot(shot, 0)
+    if (target === 'player') {
+      tallyKind('seen')
+      if (shot.kind === 'spin') match.spinsUsed += 1
+    }
   }
 
   function update(dt) {
@@ -108,12 +124,20 @@ export function createMatch(session, fx, audio) {
     updateActor(match.player, dt)
     updateActor(match.ai, dt)
     match.flash = Math.max(0, match.flash - dt * 3.2)
+    match.aiStaminaShown += (match.aiStamina - match.aiStaminaShown) * Math.min(1, dt * 8)
     const darkTarget = match.phase === 'point' && match.lastPoint === 'ai' ? 1 : 0
     match.darken += (darkTarget - match.darken) * Math.min(1, dt * 9)
 
     if (match.phase === 'ready') {
       match.messageT -= dt
-      if (match.messageT <= 0) startServe()
+      if (match.messageT <= 0) {
+        match.count -= 1
+        if (match.count <= 0) startServe()
+        else {
+          match.message = String(match.count)
+          match.messageT = match.readyTick
+        }
+      }
       return
     }
     if (match.phase === 'point') {
@@ -121,7 +145,7 @@ export function createMatch(session, fx, audio) {
       if (match.messageT <= 0) {
         const done = match.score.player >= tuning.pointsToWin || match.score.ai >= tuning.pointsToWin
         if (done) finish(match.score.player >= tuning.pointsToWin)
-        else startServe()
+        else beginReady()
       }
       return
     }
@@ -167,7 +191,7 @@ export function createMatch(session, fx, audio) {
     }
 
     if (match.phase === 'flight' && match.target === 'player') {
-      const late = orderedWindows().late / 1000
+      const late = lateLimit(shot) / 1000
       if (match.simTime > arrivalTime(shot) + late) {
         if (!shot.attempted) note('miss', null)
         losePoint()
@@ -200,9 +224,10 @@ export function createMatch(session, fx, audio) {
     }
 
     const windows = orderedWindows()
+    const late = lateLimit(shot)
     const abs = Math.abs(errorMs)
-    const outer = errorMs > 0 ? windows.late : windows.weak
-    const good = errorMs > 0 ? Math.min(windows.good, windows.late) : windows.good
+    const outer = errorMs > 0 ? late : windows.weak
+    const good = errorMs > 0 ? Math.min(windows.good, late) : windows.good
     const perfect = Math.min(windows.perfect, outer)
     let quality = null
     if (abs <= perfect) quality = 'perfect'
@@ -217,6 +242,13 @@ export function createMatch(session, fx, audio) {
       note('wrong')
       audio.whiff()
       spawnWhiff(fx, 'НЕ ТУДА', screen.x, screen.y)
+      // Early wrong side, typical of a spin read off the bounce: the ball has not
+      // arrived, so the other button can still save it.
+      if (errorMs < 0) {
+        shot.attempted = false
+        match.player.busyUntil = match.simTime
+        return
+      }
       if (quality) losePoint()
       return
     }
@@ -224,7 +256,7 @@ export function createMatch(session, fx, audio) {
       note('miss')
       audio.whiff()
       spawnWhiff(fx, errorMs > 0 ? 'ПОЗДНО' : 'РАНО', screen.x, screen.y)
-      if (errorMs > windows.late) losePoint()
+      if (errorMs > late) losePoint()
       return
     }
 
@@ -243,12 +275,16 @@ export function createMatch(session, fx, audio) {
       rallySpeed: match.rallySpeed,
       tier,
     })
+    match.aiStamina = nextStamina(match.aiStamina, quality, match.rallySpeed, match.aiStaminaMax)
     shot.aiDecision = planReturn({
       tier,
       quality,
       playerSide: match.playerSide,
       rallySpeed: match.rallySpeed,
       incomingTx: shot.to.tx,
+      stamina: match.aiStamina,
+      max: match.aiStaminaMax,
+      spinsUsed: match.spinsUsed,
     })
     const screen = project(at.tx, at.ty, at.h)
     spawnHit(fx, quality, screen.x, screen.y)
@@ -262,6 +298,7 @@ export function createMatch(session, fx, audio) {
     const decision = match.shot.aiDecision
     if (!decision || !decision.hit) {
       triggerAnim(match.ai, 'fall', decision ? decision.side : match.aiSide, match.simTime)
+      spawnWhiff(fx, 'ВЫДОХСЯ', match.ai.x, match.ai.y - 96)
       winPoint()
       return
     }
@@ -269,10 +306,15 @@ export function createMatch(session, fx, audio) {
     decision.returnShot.from = { tx: at.tx, ty: at.ty }
     decision.returnShot.fromH = Math.max(0.12, at.h)
     bumpRally()
-    decision.returnShot.flightTime = Math.max(
-      0.32,
-      currentTier().flightTime / (match.rallySpeed * (decision.smash ? 1.36 : 1)),
-    )
+    const pace = decision.speed ?? (decision.smash ? 1.36 : 1)
+    const shots = tuning.shots
+    let flight = currentTier().flightTime / (match.rallySpeed * pace)
+    if (decision.returnShot.kind === 'float') flight *= shots.floatTime
+    if (decision.returnShot.kind === 'spin') {
+      const after = Math.max(0.05, 1 - decision.returnShot.bounceAt)
+      flight = Math.max(flight, 0.3 / after)
+    }
+    decision.returnShot.flightTime = Math.max(0.32, flight)
     const screen = project(at.tx, at.ty, at.h)
     spawnHit(fx, decision.smash ? 'perfect' : 'good', screen.x, screen.y)
     fx.hitStop = decision.smash ? tuning.hitStop.good / 1000 : 0
@@ -281,13 +323,31 @@ export function createMatch(session, fx, audio) {
     launch(decision.returnShot, 'player')
   }
 
+  function refillStamina() {
+    const max = Math.max(0.05, currentTier().stamina)
+    match.aiStaminaMax = max
+    match.aiStamina = max
+    match.aiStaminaShown = max
+  }
+
   function bumpRally() {
     match.rallyHits += 1
     match.rallySpeed = Math.min(tuning.rallySpeedMax, 1 + match.rallyHits * tuning.rallySpeedStep)
   }
 
+  function lateLimit(shot) {
+    const base = orderedWindows().late
+    if (!shot || shot.kind !== 'float') return base
+    return Math.max(base, currentTier().floatLate || base)
+  }
+
   function note(kind) {
     if (session.qualities[kind] != null) session.qualities[kind] += 1
+  }
+
+  function tallyKind(which) {
+    const bucket = session.byKind?.[match.shot?.kind]
+    if (bucket) bucket[which] += 1
   }
 
   function endRally() {
@@ -315,6 +375,7 @@ export function createMatch(session, fx, audio) {
     match.score.ai += 1
     match.lastPoint = 'ai'
     match.phase = 'point'
+    tallyKind('lost')
     match.message = 'МЯЧ ПОТЕРЯН'
     match.messageT = 1.12
     match.pending = null
@@ -333,6 +394,12 @@ export function createMatch(session, fx, audio) {
     else bucket.losses += 1
     triggerAnim(match.player, playerWon ? 'cheer' : 'fall', match.playerSide, match.simTime)
     triggerAnim(match.ai, playerWon ? 'fall' : 'cheer', match.aiSide, match.simTime)
+    if (playerWon && match.tierAtStart < tuning.tiers.length - 1) {
+      tuning.tierIndex = match.tierAtStart + 1
+      saveTuning()
+      restart()
+      match.promoted = true
+    }
   }
 
   restart()

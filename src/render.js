@@ -1,7 +1,7 @@
-import { VIEW, project, tableCorners } from './ball.js'
-import { drawActor } from './stickman.js'
-import { tuning, currentTier, orderedWindows } from './tuning.js'
-import { arrivalTime } from './ball.js'
+import { VIEW, project, tableCorners } from './ball.js?v=11'
+import { drawActor } from './stickman.js?v=11'
+import { tuning, currentTier, orderedWindows } from './tuning.js?v=11'
+import { arrivalTime } from './ball.js?v=11'
 
 const FONT = '"Arial Black", "Segoe UI", system-ui, sans-serif'
 
@@ -57,6 +57,7 @@ export function render(ctx, match, fx) {
     ctx.globalAlpha = 1
   }
 
+  drawStamina(ctx, match, theme)
   drawScore(ctx, match, theme)
   drawBanner(ctx, match, theme)
   if (tuning.showTimingGuide) drawGuide(ctx, match, theme)
@@ -135,7 +136,7 @@ function drawMarker(ctx, match, theme) {
   ctx.save()
   ctx.translate(p.x, p.y)
   ctx.globalAlpha = 0.35 + 0.45 * pulse
-  ctx.strokeStyle = theme.ink
+  ctx.strokeStyle = match.shot.kind === 'spin' ? '#00E5FF' : theme.ink
   ctx.lineWidth = 3
   ctx.beginPath()
   ctx.arc(0, 0, 10 + pulse * 4, 0, Math.PI * 2)
@@ -178,14 +179,14 @@ function drawBall(ctx, match, fx, theme) {
     match.trail.forEach((sample, i) => {
       const tp = project(sample.tx, sample.ty, sample.h)
       ctx.globalAlpha = ((i + 1) / match.trail.length) * 0.18
-      ctx.fillStyle = '#fff'
+      ctx.fillStyle = ballFill(match)
       ctx.beginPath()
       ctx.arc(tp.x - p.x, tp.y - p.y, r * 0.8, 0, Math.PI * 2)
       ctx.fill()
     })
   }
   ctx.globalAlpha = 1
-  ctx.fillStyle = '#fff'
+  ctx.fillStyle = ballFill(match)
   ctx.strokeStyle = theme.ink
   ctx.lineWidth = 3.5
   ctx.beginPath()
@@ -193,6 +194,10 @@ function drawBall(ctx, match, fx, theme) {
   ctx.fill()
   ctx.stroke()
   ctx.restore()
+}
+
+function ballFill(match) {
+  return match.shot && match.shot.kind === 'spin' ? '#00E5FF' : '#fff'
 }
 
 function drawFootShadow(ctx, actor) {
@@ -204,6 +209,33 @@ function drawFootShadow(ctx, actor) {
   ctx.arc(0, 0, 28, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
+}
+
+function drawStamina(ctx, match, theme) {
+  if (!tuning.showStamina) return
+  if (match.phase === 'ready' || match.phase === 'over') return
+  const max = match.aiStaminaMax || 1
+  const now = clamp(match.aiStamina / max, 0, 1)
+  const shown = clamp(match.aiStaminaShown / max, 0, 1)
+  const w = 72
+  const h = 10
+  const x = match.ai.x - w / 2
+  const y = match.ai.y - 118
+  roundRect(ctx, x, y, w, h, 3)
+  ctx.fillStyle = theme.paper
+  ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = theme.ink
+  ctx.stroke()
+  const inner = w - 4
+  if (shown > now) {
+    ctx.globalAlpha = 0.28
+    ctx.fillStyle = theme.ink
+    ctx.fillRect(x + 2, y + 2, inner * shown, h - 4)
+    ctx.globalAlpha = 1
+  }
+  ctx.fillStyle = theme.ink
+  ctx.fillRect(x + 2, y + 2, inner * now, h - 4)
 }
 
 function drawScore(ctx, match, theme) {
@@ -247,7 +279,7 @@ function drawFlip(ctx, x, y, value, theme) {
 
 function drawBanner(ctx, match, theme) {
   if (match.phase === 'ready') {
-    drawBubble(ctx, VIEW.cx - 36, 158, 'ГОТОВ', theme)
+    drawCountdown(ctx, match, theme)
     return
   }
   if (match.phase === 'point' && match.message) {
@@ -264,25 +296,20 @@ function drawBanner(ctx, match, theme) {
   }
 }
 
-function drawBubble(ctx, x, y, text, theme) {
-  ctx.font = `800 22px ${FONT}`
-  const w = 148
-  const h = 48
-  roundRect(ctx, x - w / 2, y - h / 2, w, h, 16)
-  ctx.fillStyle = theme.paper
-  ctx.fill()
-  ctx.lineWidth = 4
-  ctx.strokeStyle = theme.ink
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(x + 18, y + h / 2)
-  ctx.lineTo(x + 34, y + h / 2 + 12)
-  ctx.lineTo(x + 40, y + h / 2)
-  ctx.fill()
-  ctx.fillStyle = theme.ink
+function drawCountdown(ctx, match, theme) {
+  const name = currentTier().name.toUpperCase()
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, x, y + 1)
+  ctx.lineWidth = 8
+  ctx.strokeStyle = theme.bg
+  ctx.fillStyle = theme.ink
+  ctx.font = `800 28px ${FONT}`
+  ctx.strokeText(name, VIEW.cx, 430)
+  ctx.fillText(name, VIEW.cx, 430)
+  ctx.font = `800 140px ${FONT}`
+  ctx.lineWidth = 14
+  ctx.strokeText(match.message, VIEW.cx, 540)
+  ctx.fillText(match.message, VIEW.cx, 540)
 }
 
 function drawGuide(ctx, match, theme) {

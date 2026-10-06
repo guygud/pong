@@ -1,4 +1,4 @@
-import { tuning } from './tuning.js'
+import { tuning } from './tuning.js?v=11'
 
 // Hip positions. Legs hang ~60px below the hip; the head sits ~80px above it.
 const STANCE = {

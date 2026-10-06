@@ -1,4 +1,4 @@
-import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js'
+import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js?v=11'
 
 const GLOBALS = [
   ['windows.perfect', 'Идеально, ±мс', 20, 160, 1],
@@ -13,9 +13,15 @@ const GLOBALS = [
   ['rallySpeedStep', 'Ускорение за удар', 0, 0.25, 0.005],
   ['rallySpeedMax', 'Потолок скорости', 1, 2.2, 0.05],
   ['pointsToWin', 'Очков до победы', 1, 11, 1],
-  ['receiveShift.perfect', 'Идеально: промах ИИ', 0, 0.6, 0.01],
-  ['receiveShift.good', 'Хорошо: промах ИИ', -0.1, 0.4, 0.01],
-  ['receiveShift.weak', 'Слабо: промах ИИ', -0.6, 0.2, 0.01],
+  ['stamina.perfect', 'Идеально: расход', 0.05, 1, 0.01],
+  ['stamina.good', 'Хорошо: расход', 0, 0.6, 0.01],
+  ['stamina.weak', 'Слабо: расход', -0.4, 0.4, 0.01],
+  ['stamina.speedScale', 'Расход от темпа', 0, 2, 0.05],
+  ['stamina.lowAt', 'Порог отчаяния', 0.05, 0.9, 0.01],
+  ['shots.floatBounceAt', 'Оттяжка: доля до отскока', 0.5, 0.9, 0.01],
+  ['shots.floatTime', 'Оттяжка: время', 1, 1.6, 0.01],
+  ['shots.spinBounceAt', 'Кручёный: доля до отскока', 0.3, 0.6, 0.01],
+  ['shots.spinBounce', 'Кручёный: отскок', 0.3, 0.9, 0.01],
   ['returns.perfect.speed', 'Скорость идеального', 0.8, 1.8, 0.01],
   ['returns.good.speed', 'Скорость хорошего', 0.6, 1.5, 0.01],
   ['returns.weak.speed', 'Скорость слабого', 0.45, 1.2, 0.01],
@@ -26,15 +32,24 @@ const GLOBALS = [
 
 const TIER_FIELDS = [
   ['flightTime', 'Время полёта, с', 0.4, 1.5, 0.01],
-  ['receiveSkill', 'Навык приёма', 0, 1, 0.01],
+  ['stamina', 'Запас сил', 0.3, 4, 0.05],
+  ['desperation', 'Отчаяние', 0, 1, 0.01],
   ['cornerAccuracy', 'Удар в угол', 0, 1, 0.01],
   ['smashRate', 'Частота смэша', 0, 1, 0.01],
   ['serveSpread', 'Разброс подачи', 0, 1, 0.01],
+  ['wrongFoot', 'Подлов', 0, 1, 0.01],
+  ['floatLate', 'Оттяжка: поздно, мс', 90, 500, 1],
+  ['shotMix.flat', 'Обычный', 0, 1, 0.01],
+  ['shotMix.float', 'Оттяжка', 0, 1, 0.01],
+  ['shotMix.spin', 'Кручёный', 0, 1, 0.01],
+  ['spinCap', 'Лимит кручёных, 0 — нет', 0, 8, 1],
 ]
 
 export function mountDebug(session, match, { onRestart, onTier }) {
-  const root = document.getElementById('debug')
-  root.innerHTML = ''
+  const panel = document.getElementById('debug')
+  panel.innerHTML = ''
+  const root = el('div', 'debug-scroll')
+  panel.append(root)
   const head = el('div', 'debug-head')
   const title = el('div', 'debug-title', 'Тюнинг')
   const close = button('Закрыть', () => toggle())
@@ -56,6 +71,9 @@ export function mountDebug(session, match, { onRestart, onTier }) {
     tiers.append(b)
   })
   root.append(section('Соперник'), tiers)
+  const sideBox = el('div', 'sliders')
+  sideBox.append(slider(['minSide', 'Отступ от центра', 0, 0.6, 0.01], () => tuning))
+  root.append(sideBox)
 
   const tierBox = el('div', 'sliders')
   root.append(tierBox)
@@ -68,6 +86,7 @@ export function mountDebug(session, match, { onRestart, onTier }) {
   root.append(section('Подсказки'))
   root.append(checkbox('showBounceMarker', 'Метка отскока'))
   root.append(checkbox('showTimingGuide', 'Шкала тайминга'))
+  root.append(checkbox('showStamina', 'Стамина соперника'))
 
   root.append(section('Экономика'))
   const econ = el('div', 'sliders')
@@ -88,6 +107,7 @@ export function mountDebug(session, match, { onRestart, onTier }) {
       session.timingErrors = []
       session.rallyLengths = []
       session.byTier = tuning.tiers.map(() => ({ wins: 0, losses: 0 }))
+      session.byKind = { flat: { seen: 0, lost: 0 }, float: { seen: 0, lost: 0 }, spin: { seen: 0, lost: 0 } }
     }),
   )
   actions.append(
@@ -129,7 +149,7 @@ export function mountDebug(session, match, { onRestart, onTier }) {
   }
 
   function paintTelemetry() {
-    if (root.hidden) return
+    if (panel.hidden) return
     const q = session.qualities
     const attempts = q.perfect + q.good + q.weak + q.miss + q.wrong
     const timed = session.timingErrors
@@ -149,8 +169,17 @@ export function mountDebug(session, match, { onRestart, onTier }) {
       .join('\n')
     const phase = { ready: 'готов', flight: 'полёт', point: 'очко', over: 'конец' }[match.phase] || match.phase
     const flight = match.shot ? match.shot.flightTime.toFixed(2).replace('.', ',') : '—'
+    const kinds = session.byKind || {}
+    const kindLine = ['flat', 'float', 'spin']
+      .map((key) => {
+        const label = { flat: 'обычный', float: 'оттяжка', spin: 'кручёный' }[key]
+        const rec = kinds[key] || { seen: 0, lost: 0 }
+        return `${label} ${rec.seen}/${rec.lost}`
+      })
+      .join('   ')
     tel.textContent = [
       `фаза ${phase}   мяч ${flight} с   скорость ${match.rallySpeed.toFixed(2).replace('.', ',')}`,
+      kindLine,
       `идеально ${q.perfect}   хорошо ${q.good}   слабо ${q.weak}   мимо ${q.miss}   не туда ${q.wrong}   (${attempts})`,
       `тайминг, среднее ${sign(avg)}   медиана ${sign(mid)}`,
       `плюс\u00A0— опоздание`,
@@ -161,12 +190,12 @@ export function mountDebug(session, match, { onRestart, onTier }) {
 
   sync()
   setInterval(paintTelemetry, 200)
-  return { sync, toggle, isOpen: () => !root.hidden }
+  return { sync, toggle, isOpen: () => !panel.hidden }
 
   function toggle() {
-    root.hidden = !root.hidden
+    panel.hidden = !panel.hidden
     const tune = document.getElementById('tune')
-    const open = !root.hidden
+    const open = !panel.hidden
     tune.textContent = open ? 'Закрыть' : 'Тюнинг'
     tune.setAttribute('aria-expanded', open ? 'true' : 'false')
     if (open) sync()

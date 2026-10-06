@@ -1,11 +1,11 @@
-import { loadTuning, tuning, saveTuning } from './tuning.js'
-import { createFx, updateFx } from './fx.js'
-import { audio } from './audio.js'
-import { createSession, createMatch } from './match.js'
-import { bindInput } from './input.js'
-import { render } from './render.js'
-import { mountDebug } from './debug.js'
-import { VIEW, project } from './ball.js'
+import { loadTuning, tuning, saveTuning } from './tuning.js?v=11'
+import { createFx, updateFx } from './fx.js?v=11'
+import { audio } from './audio.js?v=11'
+import { createSession, createMatch } from './match.js?v=11'
+import { bindInput } from './input.js?v=11'
+import { render } from './render.js?v=11'
+import { mountDebug } from './debug.js?v=11'
+import { VIEW, project } from './ball.js?v=11'
 
 loadTuning()
 
@@ -88,6 +88,10 @@ function frameLoop(now) {
     else if (!paused && !held) {
       match.update(STEP)
       updateFx(fx, STEP)
+      if (match.promoted) {
+        match.promoted = false
+        debug.sync()
+      }
     }
     acc -= STEP
   }

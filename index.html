@@ -11,7 +11,7 @@
       height: 100%;
       background: #111;
       overflow: hidden;
-      touch-action: manipulation;
+      touch-action: none;
       font-family: "Arial Black", "Arial Rounded MT Bold", Impact, sans-serif;
     }
     #frame {
@@ -99,20 +99,30 @@
     }
     #debug {
       position: fixed;
-      top: 10px;
+      top: max(10px, env(safe-area-inset-top));
       right: 10px;
+      bottom: max(10px, env(safe-area-inset-bottom));
       width: min(300px, calc(100vw - 20px));
-      max-height: calc(100vh - 20px);
-      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       z-index: 20;
       background: rgba(16, 16, 16, 0.94);
       color: #f4f4f4;
       border-radius: 14px;
-      padding: 12px;
       box-sizing: border-box;
       font: 12px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
     }
     #debug[hidden] { display: none; }
+    #debug .debug-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: scroll;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      padding: 12px;
+    }
     #debug .debug-head {
       position: sticky;
       top: -12px;
@@ -168,7 +178,7 @@
     #debug .row { display: block; margin: 6px 0; }
     #debug .row-top { display: flex; justify-content: space-between; gap: 8px; }
     #debug .row-value { color: #ffc400; }
-    #debug input[type="range"] { width: 100%; margin: 2px 0 0; }
+    #debug input[type="range"] { width: 100%; margin: 2px 0 0; touch-action: manipulation; }
     #debug .check { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
     #debug .debug-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   </style>
@@ -184,6 +194,7 @@
     </div>
   </div>
   <div id="debug" hidden></div>
-  <script type="module" src="./src/main.js"></script>
+  <!-- Подними ?v= во всех импортах вместе с этой ссылкой, когда надо сбросить кэш на телефоне. -->
+  <script type="module" src="./src/main.js?v=11"></script>
 </body>
 </html>
