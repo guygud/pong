@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>Король пинг-понга</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #111;
+      overflow: hidden;
+      touch-action: manipulation;
+      font-family: "Arial Black", "Arial Rounded MT Bold", Impact, sans-serif;
+    }
+    #frame {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 540px;
+      height: 960px;
+      transform-origin: center center;
+      overflow: hidden;
+      background: #FFC400;
+    }
+    #game {
+      width: 540px;
+      height: 960px;
+      display: block;
+    }
+    #pause {
+      position: absolute;
+      top: 22px;
+      left: 18px;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      background: #171717;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 0;
+      z-index: 3;
+    }
+    #pause i {
+      display: block;
+      width: 5px;
+      height: 16px;
+      background: #fff;
+      border-radius: 1px;
+    }
+    #frame.lose #pause { background: #f2f2f2; }
+    #frame.lose #pause i { background: #171717; }
+    #tune {
+      position: absolute;
+      top: 22px;
+      right: 18px;
+      height: 48px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 24px;
+      background: #171717;
+      color: #fff;
+      font: 800 15px/1 "Arial Black", "Segoe UI", system-ui, sans-serif;
+      z-index: 4;
+      touch-action: manipulation;
+    }
+    #frame.lose #tune { background: #f2f2f2; color: #171717; }
+    #controls {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 28px;
+      display: none;
+      gap: 16px;
+      z-index: 3;
+    }
+    #controls.show { display: flex; }
+    .hit {
+      flex: 1;
+      height: 96px;
+      border: 4px solid #171717;
+      border-radius: 18px;
+      background: #fff;
+      color: #171717;
+      font: 800 30px/1 "Arial Black", "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 0 #171717;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .hit:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #171717;
+    }
+    #debug {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: min(300px, calc(100vw - 20px));
+      max-height: calc(100vh - 20px);
+      overflow: auto;
+      z-index: 20;
+      background: rgba(16, 16, 16, 0.94);
+      color: #f4f4f4;
+      border-radius: 14px;
+      padding: 12px;
+      box-sizing: border-box;
+      font: 12px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    }
+    #debug[hidden] { display: none; }
+    #debug .debug-head {
+      position: sticky;
+      top: -12px;
+      margin: -12px -12px 8px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #111;
+      z-index: 2;
+    }
+    #debug .debug-title {
+      font: 800 16px/1 "Arial Black", "Segoe UI", system-ui, sans-serif;
+    }
+    #debug .debug-close {
+      min-height: 44px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #ffc400;
+      color: #171717;
+      font: 800 15px/1 "Arial Black", "Segoe UI", system-ui, sans-serif;
+    }
+    #debug .debug-hint { margin: 6px 0 8px; color: #bbb; }
+    #debug .telemetry {
+      white-space: pre;
+      background: #0c0c0c;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      color: #d8ffb0;
+    }
+    #debug .debug-section {
+      margin: 10px 0 4px;
+      font: 800 11px/1 "Arial Black", Impact, sans-serif;
+      letter-spacing: 0.6px;
+      color: #ffc400;
+    }
+    #debug .tier-row { display: flex; gap: 6px; }
+    #debug .tier-row button,
+    #debug .debug-actions button {
+      font: 700 12px/1 ui-monospace, Menlo, Consolas, monospace;
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 7px 8px;
+    }
+    #debug .tier-row button { flex: 1; }
+    #debug .tier-row button.active { background: #ffc400; color: #171717; border-color: #ffc400; }
+    #debug .tier-name { margin: 6px 0; color: #fff; }
+    #debug .row { display: block; margin: 6px 0; }
+    #debug .row-top { display: flex; justify-content: space-between; gap: 8px; }
+    #debug .row-value { color: #ffc400; }
+    #debug input[type="range"] { width: 100%; margin: 2px 0 0; }
+    #debug .check { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+    #debug .debug-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="frame">
+    <canvas id="game" width="540" height="960"></canvas>
+    <button id="pause" type="button" aria-label="Пауза"><i></i><i></i></button>
+    <button id="tune" type="button" aria-expanded="false">Тюнинг</button>
+    <div id="controls">
+      <button id="hitL" class="hit" type="button">Слева</button>
+      <button id="hitR" class="hit" type="button">Справа</button>
+    </div>
+  </div>
+  <div id="debug" hidden></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
