@@ -6,7 +6,7 @@
 export const STORAGE_KEY = 'pongking-tuning-v1'
 
 export const DEFAULTS = {
-  version: 5,
+  version: 6,
   tierIndex: 0,
   pointsToWin: 5,
   contactDelay: 0.09,
@@ -35,9 +35,9 @@ export const DEFAULTS = {
   tiers: [
     { name: 'Новичок', flightTime: 1.1, stamina: 1.0, desperation: 0, cornerAccuracy: 0.25, smashRate: 0.05, serveSpread: 0.35, wrongFoot: 0, floatLate: 150, spinCap: 0, shotMix: { flat: 1, float: 0, spin: 0 } },
     { name: 'Клуб', flightTime: 0.96, stamina: 1.3, desperation: 0.15, cornerAccuracy: 0.45, smashRate: 0.12, serveSpread: 0.45, wrongFoot: 0.1, floatLate: 190, spinCap: 0, shotMix: { flat: 0.7, float: 0.3, spin: 0 } },
-    { name: 'Лига', flightTime: 0.84, stamina: 1.7, desperation: 0.4, cornerAccuracy: 0.62, smashRate: 0.22, serveSpread: 0.55, wrongFoot: 0.22, floatLate: 240, spinCap: 0, shotMix: { flat: 0.5, float: 0.3, spin: 0.2 } },
-    { name: 'Профи', flightTime: 0.72, stamina: 1.5, desperation: 0.7, cornerAccuracy: 0.78, smashRate: 0.35, serveSpread: 0.65, wrongFoot: 0.32, floatLate: 300, spinCap: 3, shotMix: { flat: 0.4, float: 0.3, spin: 0.3 } },
-    { name: 'Король', flightTime: 0.66, stamina: 2.2, desperation: 1, cornerAccuracy: 0.9, smashRate: 0.42, serveSpread: 0.75, wrongFoot: 0.4, floatLate: 360, spinCap: 4, shotMix: { flat: 0.34, float: 0.33, spin: 0.33 } },
+    { name: 'Лига', flightTime: 0.9, stamina: 1.35, desperation: 0.28, cornerAccuracy: 0.55, smashRate: 0.16, serveSpread: 0.5, wrongFoot: 0.14, floatLate: 240, spinCap: 0, shotMix: { flat: 0.58, float: 0.3, spin: 0.12 } },
+    { name: 'Профи', flightTime: 0.78, stamina: 1.25, desperation: 0.48, cornerAccuracy: 0.68, smashRate: 0.24, serveSpread: 0.56, wrongFoot: 0.22, floatLate: 300, spinCap: 2, shotMix: { flat: 0.5, float: 0.3, spin: 0.2 } },
+    { name: 'Король', flightTime: 0.74, stamina: 1.5, desperation: 0.5, cornerAccuracy: 0.74, smashRate: 0.28, serveSpread: 0.6, wrongFoot: 0.24, floatLate: 360, spinCap: 2, shotMix: { flat: 0.48, float: 0.32, spin: 0.2 } },
   ],
   // Placeholder economy for the run wrapper. Not spent in this prototype.
   economy: {

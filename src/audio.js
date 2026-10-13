@@ -31,13 +31,24 @@ function tone(freq, dur, type, gain, slide) {
   o.stop(t + dur + 0.02)
 }
 
+const NOISE_DUR = 0.08
+let noiseBuffer = null
+
+function ensureNoise() {
+  const c = ac
+  if (!c) return null
+  if (noiseBuffer && noiseBuffer.sampleRate === c.sampleRate) return noiseBuffer
+  const n = Math.max(1, Math.floor(c.sampleRate * NOISE_DUR))
+  noiseBuffer = c.createBuffer(1, n, c.sampleRate)
+  const data = noiseBuffer.getChannelData(0)
+  for (let i = 0; i < n; i++) data[i] = Math.random() * 2 - 1
+  return noiseBuffer
+}
+
 function noise(dur, gain, freq) {
   if (!live()) return
   const c = ac
-  const n = Math.max(1, Math.floor(c.sampleRate * dur))
-  const buffer = c.createBuffer(1, n, c.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / n)
+  const buffer = ensureNoise()
   const src = c.createBufferSource()
   src.buffer = buffer
   const filter = c.createBiquadFilter()
@@ -45,17 +56,22 @@ function noise(dur, gain, freq) {
   filter.frequency.value = freq
   filter.Q.value = 0.7
   const g = c.createGain()
-  g.gain.value = gain
+  const t = c.currentTime
+  const d = Math.min(dur, NOISE_DUR)
+  g.gain.setValueAtTime(gain, t)
+  g.gain.linearRampToValueAtTime(0.001, t + d)
   src.connect(filter)
   filter.connect(g)
   g.connect(c.destination)
-  src.start()
+  src.start(t)
+  src.stop(t + d)
 }
 
 export const audio = {
   unlock() {
     try {
       context()
+      ensureNoise()
     } catch {
       // Audio is optional.
     }

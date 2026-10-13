@@ -1,26 +1,26 @@
-import { VIEW, project, tableCorners } from './ball.js?v=11'
-import { drawActor } from './stickman.js?v=11'
-import { tuning, currentTier, orderedWindows } from './tuning.js?v=11'
-import { arrivalTime } from './ball.js?v=11'
+import { VIEW, project, tableCorners } from './ball.js?v=19'
+import { drawActor } from './stickman.js?v=19'
+import { tuning, currentTier, orderedWindows } from './tuning.js?v=19'
+import { arrivalTime } from './ball.js?v=19'
 
 const FONT = '"Arial Black", "Segoe UI", system-ui, sans-serif'
 
 export function render(ctx, match, fx) {
   const theme = makeTheme(match.darken)
   const amp = fx.hitStop > 0 ? 0 : fx.shake
-  const ox = (Math.random() - 0.5) * 2 * amp
-  const oy = (Math.random() - 0.5) * 2 * amp
 
   ctx.fillStyle = theme.bg
   ctx.fillRect(0, 0, VIEW.w, VIEW.h)
 
   ctx.save()
-  ctx.translate(ox, oy)
-  ctx.fillStyle = theme.bg
-  ctx.fillRect(-30, -30, VIEW.w + 60, VIEW.h + 60)
+  if (amp > 0) {
+    ctx.translate((Math.random() - 0.5) * 2 * amp, (Math.random() - 0.5) * 2 * amp)
+    ctx.fillStyle = theme.bg
+    ctx.fillRect(-30, -30, VIEW.w + 60, VIEW.h + 60)
+  }
 
-  drawTable(ctx, theme)
-  if (match.ball) drawShadow(ctx, match.ball, theme)
+  drawTable(ctx, theme, match.darken)
+  if (match.ball) drawShadow(ctx, match, theme)
   if (tuning.showBounceMarker && match.shot && !match.shot.bounced && match.phase === 'flight') {
     drawMarker(ctx, match, theme)
   }
@@ -72,17 +72,51 @@ export function render(ctx, match, fx) {
   if (match.phase === 'over') drawResult(ctx, match)
 }
 
+let themeCache = null
+let themeDarken = -1
+
+function themeStep(darken) {
+  return Math.round(clamp(darken, 0, 1) * 32) / 32
+}
+
 function makeTheme(darken) {
-  const t = clamp(darken, 0, 1)
-  return {
+  const step = themeStep(darken)
+  if (themeCache && themeDarken === step) return themeCache
+  themeDarken = step
+  const t = step
+  themeCache = {
     bg: mix('#FFC400', '#141414', t),
     ink: mix('#171717', '#f5f5f5', t),
     paper: mix('#ffffff', '#2a2a2a', t),
     line: mix('#171717', '#f5f5f5', t),
   }
+  return themeCache
 }
 
-function drawTable(ctx, theme) {
+let tableCanvas = null
+let tableKey = null
+let tableDpr = 0
+
+function drawTable(ctx, theme, darken) {
+  const dpr = ctx.getTransform().a || 1
+  const key = themeStep(darken)
+  if (!tableCanvas || tableDpr !== dpr || tableKey !== key) {
+    if (!tableCanvas || tableDpr !== dpr) {
+      tableCanvas = document.createElement('canvas')
+      tableCanvas.width = Math.round(VIEW.w * dpr)
+      tableCanvas.height = Math.round(VIEW.h * dpr)
+      tableDpr = dpr
+    }
+    const off = tableCanvas.getContext('2d')
+    off.setTransform(dpr, 0, 0, dpr, 0, 0)
+    off.clearRect(0, 0, VIEW.w, VIEW.h)
+    paintTable(off, theme)
+    tableKey = key
+  }
+  ctx.drawImage(tableCanvas, 0, 0, VIEW.w, VIEW.h)
+}
+
+function paintTable(ctx, theme) {
   const c = tableCorners()
   ctx.save()
   ctx.translate(0, 10)
@@ -152,10 +186,12 @@ function drawMarker(ctx, match, theme) {
   ctx.restore()
 }
 
-function drawShadow(ctx, ball, theme) {
+function drawShadow(ctx, match, theme) {
+  const ball = match.ball
   const p = project(ball.tx, ball.ty, 0)
   const lift = project(ball.tx, ball.ty, ball.h).y
   const air = clamp((p.y - lift) / 160, 0, 1)
+  const heat = floatHeat(match.shot)
   ctx.save()
   ctx.translate(p.x, p.y)
   ctx.scale(1, 0.45)
@@ -164,7 +200,22 @@ function drawShadow(ctx, ball, theme) {
   ctx.beginPath()
   ctx.arc(0, 0, 12 * p.scale, 0, Math.PI * 2)
   ctx.fill()
+  if (heat > 0) {
+    // Straight red. Mixing into theme.ink fails: that color is already rgb(), not hex.
+    ctx.globalAlpha = Math.min(0.92, 0.35 + heat * 0.55) * (1 - air * 0.12)
+    ctx.fillStyle = '#FF2A2A'
+    ctx.beginPath()
+    ctx.arc(0, 0, (16 + heat * 10) * p.scale, 0, Math.PI * 2)
+    ctx.fill()
+  }
   ctx.restore()
+}
+
+// A float's shadow warms early in the hang and stays red after the bounce.
+function floatHeat(shot) {
+  if (!shot || shot.kind !== 'float') return 0
+  const along = Math.max(0, shot.progress || 0) / Math.max(0.05, shot.bounceAt || 0.72)
+  return Math.min(1, Math.pow(along, 0.45))
 }
 
 function drawBall(ctx, match, fx, theme) {

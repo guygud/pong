@@ -1,8 +1,8 @@
-import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=11'
-import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=11'
-import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=11'
-import { createActor, triggerAnim, updateActor } from './stickman.js?v=11'
-import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=11'
+import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=19'
+import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=19'
+import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=19'
+import { createActor, triggerAnim, updateActor } from './stickman.js?v=19'
+import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=19'
 
 export function createSession() {
   return {
@@ -209,6 +209,8 @@ export function createMatch(session, fx, audio) {
       side,
       contactAt: match.simTime + tuning.contactDelay,
       resolved: false,
+      // Captured at the press. A swing started before the bounce can still be early.
+      afterBounce: Boolean(match.shot.bounced),
     }
   }
 
@@ -227,8 +229,9 @@ export function createMatch(session, fx, audio) {
     const late = lateLimit(shot)
     const abs = Math.abs(errorMs)
     const outer = errorMs > 0 ? late : windows.weak
-    const good = errorMs > 0 ? Math.min(windows.good, late) : windows.good
     const perfect = Math.min(windows.perfect, outer)
+    // Late contact is the coyote save: it still returns the ball, but only as a weak hit.
+    const good = errorMs > 0 ? perfect : windows.good
     let quality = null
     if (abs <= perfect) quality = 'perfect'
     else if (abs <= good) quality = 'good'
@@ -252,6 +255,11 @@ export function createMatch(session, fx, audio) {
       if (quality) losePoint()
       return
     }
+    // Once the ball has bounced, the press is the cue. An early swing on the
+    // right side still returns it, graded weak, instead of whiffing into the gap
+    // between the bounce and the timing window.
+    if (!quality && swing.afterBounce && errorMs < 0) quality = 'weak'
+
     if (!quality) {
       note('miss')
       audio.whiff()

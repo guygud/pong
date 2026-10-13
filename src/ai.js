@@ -1,5 +1,5 @@
-import { tuning, currentTier } from './tuning.js?v=11'
-import { createShot, RECEIVE_TY } from './ball.js?v=11'
+import { tuning, currentTier } from './tuning.js?v=19'
+import { createShot, RECEIVE_TY } from './ball.js?v=19'
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 

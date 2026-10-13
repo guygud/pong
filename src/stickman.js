@@ -1,4 +1,4 @@
-import { tuning } from './tuning.js?v=11'
+import { tuning } from './tuning.js?v=19'
 
 // Hip positions. Legs hang ~60px below the hip; the head sits ~80px above it.
 const STANCE = {
@@ -176,7 +176,7 @@ function smooth(u) {
 export function createActor(role) {
   const home = STANCE[role]
   const side = role === 'player' ? 'L' : 'R'
-  return {
+  const actor = {
     role,
     side,
     home,
@@ -189,7 +189,10 @@ export function createActor(role) {
     hold: false,
     bob: Math.random() * 6,
     busyUntil: 0,
+    pose: null,
   }
+  actor.pose = samplePose(actor)
+  return actor
 }
 
 export function triggerAnim(actor, name, side, simTime) {
@@ -203,6 +206,7 @@ export function triggerAnim(actor, name, side, simTime) {
     const real = CLIPS[actor.role].swing.dur / actor.clipRate
     if (simTime != null) actor.busyUntil = simTime + real
   }
+  actor.pose = samplePose(actor)
 }
 
 export function updateActor(actor, dt) {
@@ -222,6 +226,7 @@ export function updateActor(actor, dt) {
   actor.x += (goalX - actor.x) * k
   actor.y += (goalY - actor.y) * k
   actor.bob += dt
+  actor.pose = poseNow
 }
 
 function samplePose(actor) {
@@ -257,7 +262,7 @@ function limb(ctx, ox, oy, deg, len1, bendDeg, len2) {
 }
 
 export function drawActor(ctx, actor, ink) {
-  const p = samplePose(actor)
+  const p = actor.pose || samplePose(actor)
   const bob = actor.clip === 'idle' ? Math.sin(actor.bob * 3.2) * 2.2 : 0
   ctx.save()
   ctx.translate(actor.x, actor.y + bob)

@@ -1,11 +1,11 @@
-import { loadTuning, tuning, saveTuning } from './tuning.js?v=11'
-import { createFx, updateFx } from './fx.js?v=11'
-import { audio } from './audio.js?v=11'
-import { createSession, createMatch } from './match.js?v=11'
-import { bindInput } from './input.js?v=11'
-import { render } from './render.js?v=11'
-import { mountDebug } from './debug.js?v=11'
-import { VIEW, project } from './ball.js?v=11'
+import { loadTuning, tuning, saveTuning } from './tuning.js?v=19'
+import { createFx, updateFx } from './fx.js?v=19'
+import { audio } from './audio.js?v=19'
+import { createSession, createMatch } from './match.js?v=19'
+import { bindInput } from './input.js?v=19'
+import { render } from './render.js?v=19'
+import { mountDebug } from './debug.js?v=19'
+import { VIEW, project } from './ball.js?v=19'
 
 loadTuning()
 
@@ -76,11 +76,14 @@ fit()
 const STEP = 1 / 60
 let acc = 0
 let last = 0
+let buttonsShown = false
+let frameLosing = false
 
 function frameLoop(now) {
   if (!last) last = now
   let delta = (now - last) / 1000
   last = now
+  if (window.__pong) window.__pong.frameMs = delta * 1000
   if (delta > 0.05) delta = 0.05
   acc += delta
   while (acc >= STEP) {
@@ -98,8 +101,15 @@ function frameLoop(now) {
   render(ctx, match, fx)
   if (paused && !held) drawPaused(ctx)
   const showButtons = !paused && (match.phase === 'flight' || match.phase === 'ready')
-  controls.classList.toggle('show', showButtons)
-  frame.classList.toggle('lose', match.darken > 0.55)
+  if (showButtons !== buttonsShown) {
+    buttonsShown = showButtons
+    controls.classList.toggle('show', showButtons)
+  }
+  const losing = match.darken > 0.55
+  if (losing !== frameLosing) {
+    frameLosing = losing
+    frame.classList.toggle('lose', losing)
+  }
   requestAnimationFrame(frameLoop)
 }
 

@@ -1,4 +1,4 @@
-import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js?v=11'
+import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js?v=19'
 
 const GLOBALS = [
   ['windows.perfect', 'Идеально, ±мс', 20, 160, 1],
@@ -51,10 +51,39 @@ export function mountDebug(session, match, { onRestart, onTier }) {
   const root = el('div', 'debug-scroll')
   panel.append(root)
   const head = el('div', 'debug-head')
+  const row = el('div', 'debug-head-row')
   const title = el('div', 'debug-title', 'Тюнинг')
   const close = button('Закрыть', () => toggle())
   close.className = 'debug-close'
-  head.append(title, close)
+  row.append(title, close)
+  const refresh = document.createElement('button')
+  refresh.type = 'button'
+  refresh.textContent = 'Обновить страницу'
+  refresh.className = 'debug-refresh'
+  // The panel opens under the finger that tapped «Тюнинг». Only a gesture that
+  // starts on this button may reload, otherwise that tap refreshes the page.
+  let refreshPressed = false
+  refresh.addEventListener('pointerdown', (e) => {
+    refreshPressed = true
+    e.preventDefault()
+    e.stopPropagation()
+  })
+  refresh.addEventListener('pointerup', (e) => {
+    if (!refreshPressed) return
+    refreshPressed = false
+    e.preventDefault()
+    e.stopPropagation()
+    const url = new URL(location.href)
+    url.searchParams.set('fresh', String(Date.now()))
+    location.replace(url.href)
+  })
+  refresh.addEventListener('pointercancel', () => {
+    refreshPressed = false
+  })
+  window.addEventListener('pointerup', () => {
+    refreshPressed = false
+  })
+  head.append(row, refresh)
   const hint = el('p', 'debug-hint', 'Клавиши 1–5 меняют соперника и начинают матч заново. Стрелки бьют слева и справа.')
   root.append(head, hint)
 
@@ -177,8 +206,9 @@ export function mountDebug(session, match, { onRestart, onTier }) {
         return `${label} ${rec.seen}/${rec.lost}`
       })
       .join('   ')
+    const frameMs = window.__pong && Number.isFinite(window.__pong.frameMs) ? window.__pong.frameMs : 0
     tel.textContent = [
-      `фаза ${phase}   мяч ${flight} с   скорость ${match.rallySpeed.toFixed(2).replace('.', ',')}`,
+      `фаза ${phase}   мяч ${flight} с   скорость ${match.rallySpeed.toFixed(2).replace('.', ',')}   кадр ${frameMs.toFixed(1).replace('.', ',')} мс`,
       kindLine,
       `идеально ${q.perfect}   хорошо ${q.good}   слабо ${q.weak}   мимо ${q.miss}   не туда ${q.wrong}   (${attempts})`,
       `тайминг, среднее ${sign(avg)}   медиана ${sign(mid)}`,

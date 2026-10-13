@@ -22,6 +22,10 @@ export function bindInput({ onHit, onConfirm, onPause, onDebug, onTier }) {
   tune.addEventListener('pointerdown', (e) => {
     e.preventDefault()
     e.stopPropagation()
+  })
+  tune.addEventListener('pointerup', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
     onDebug()
   })
 
