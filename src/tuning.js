@@ -6,7 +6,7 @@
 export const STORAGE_KEY = 'pongking-tuning-v1'
 
 export const DEFAULTS = {
-  version: 6,
+  version: 7,
   tierIndex: 0,
   pointsToWin: 5,
   contactDelay: 0.09,
@@ -34,9 +34,9 @@ export const DEFAULTS = {
   },
   tiers: [
     { name: 'Новичок', flightTime: 1.1, stamina: 1.0, desperation: 0, cornerAccuracy: 0.25, smashRate: 0.05, serveSpread: 0.35, wrongFoot: 0, floatLate: 150, spinCap: 0, shotMix: { flat: 1, float: 0, spin: 0 } },
-    { name: 'Клуб', flightTime: 0.96, stamina: 1.3, desperation: 0.15, cornerAccuracy: 0.45, smashRate: 0.12, serveSpread: 0.45, wrongFoot: 0.1, floatLate: 190, spinCap: 0, shotMix: { flat: 0.7, float: 0.3, spin: 0 } },
-    { name: 'Лига', flightTime: 0.9, stamina: 1.35, desperation: 0.28, cornerAccuracy: 0.55, smashRate: 0.16, serveSpread: 0.5, wrongFoot: 0.14, floatLate: 240, spinCap: 0, shotMix: { flat: 0.58, float: 0.3, spin: 0.12 } },
-    { name: 'Профи', flightTime: 0.78, stamina: 1.25, desperation: 0.48, cornerAccuracy: 0.68, smashRate: 0.24, serveSpread: 0.56, wrongFoot: 0.22, floatLate: 300, spinCap: 2, shotMix: { flat: 0.5, float: 0.3, spin: 0.2 } },
+    { name: 'Клуб', flightTime: 0.92, stamina: 1.32, desperation: 0.2, cornerAccuracy: 0.5, smashRate: 0.15, serveSpread: 0.48, wrongFoot: 0.13, floatLate: 190, spinCap: 0, shotMix: { flat: 0.7, float: 0.3, spin: 0 } },
+    { name: 'Лига', flightTime: 0.86, stamina: 1.42, desperation: 0.34, cornerAccuracy: 0.6, smashRate: 0.2, serveSpread: 0.54, wrongFoot: 0.18, floatLate: 240, spinCap: 0, shotMix: { flat: 0.54, float: 0.3, spin: 0.16 } },
+    { name: 'Профи', flightTime: 0.76, stamina: 1.34, desperation: 0.5, cornerAccuracy: 0.71, smashRate: 0.26, serveSpread: 0.58, wrongFoot: 0.23, floatLate: 300, spinCap: 2, shotMix: { flat: 0.48, float: 0.3, spin: 0.22 } },
     { name: 'Король', flightTime: 0.74, stamina: 1.5, desperation: 0.5, cornerAccuracy: 0.74, smashRate: 0.28, serveSpread: 0.6, wrongFoot: 0.24, floatLate: 360, spinCap: 2, shotMix: { flat: 0.48, float: 0.32, spin: 0.2 } },
   ],
   // Placeholder economy for the run wrapper. Not spent in this prototype.

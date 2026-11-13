@@ -1,9 +1,10 @@
-import { tuning } from './tuning.js?v=19'
+import { tuning } from './tuning.js?v=30'
+import { drawChicken, syncChicken } from './chicken.js?v=30'
 
 // Hip positions. Legs hang ~60px below the hip; the head sits ~80px above it.
 const STANCE = {
   player: { L: { x: 148, y: 748 }, R: { x: 392, y: 748 } },
-  opponent: { L: { x: 156, y: 268 }, R: { x: 392, y: 268 } },
+  opponent: { L: { x: 176, y: 196 }, R: { x: 364, y: 196 } },
 }
 
 const STRIKE_AT = 0.09
@@ -189,6 +190,7 @@ export function createActor(role) {
     hold: false,
     bob: Math.random() * 6,
     busyUntil: 0,
+    meetX: null,
     pose: null,
   }
   actor.pose = samplePose(actor)
@@ -220,13 +222,16 @@ export function updateActor(actor, dt) {
   }
   const poseNow = samplePose(actor)
   const home = actor.home[actor.side]
-  const goalX = home.x
+  const goalX = actor.meetX != null ? actor.meetX : home.x
   const goalY = home.y + actor.lungeDir * poseNow.lunge + poseNow.hop + poseNow.drop
-  const k = Math.min(1, dt * 18)
+  // The player walks across during the flight. The swing itself closes the last gap.
+  const follow = actor.role !== 'player' ? 18 : actor.clip === 'swing' ? 16 : 5
+  const k = Math.min(1, dt * follow)
   actor.x += (goalX - actor.x) * k
   actor.y += (goalY - actor.y) * k
   actor.bob += dt
   actor.pose = poseNow
+  syncChicken(actor, dt)
 }
 
 function samplePose(actor) {
@@ -262,11 +267,13 @@ function limb(ctx, ox, oy, deg, len1, bendDeg, len2) {
 }
 
 export function drawActor(ctx, actor, ink) {
+  if (drawChicken(ctx, actor)) return
   const p = actor.pose || samplePose(actor)
   const bob = actor.clip === 'idle' ? Math.sin(actor.bob * 3.2) * 2.2 : 0
+  const size = actor.role === 'opponent' ? 0.78 : 1
   ctx.save()
   ctx.translate(actor.x, actor.y + bob)
-  ctx.scale(actor.side === 'R' ? -1 : 1, 1)
+  ctx.scale((actor.side === 'R' ? -1 : 1) * size, size)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.strokeStyle = ink

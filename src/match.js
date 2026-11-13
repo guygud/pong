@@ -1,8 +1,9 @@
-import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=19'
-import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=19'
-import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=19'
-import { createActor, triggerAnim, updateActor } from './stickman.js?v=19'
-import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=19'
+import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=30'
+import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=30'
+import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=30'
+import { createActor, triggerAnim, updateActor } from './stickman.js?v=30'
+import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=30'
+import { paddleOffsetX } from './chicken.js?v=30'
 
 export function createSession() {
   return {
@@ -83,6 +84,7 @@ export function createMatch(session, fx, audio) {
     match.rallySpeed = 1
     refillStamina()
     match.ball = { tx: 0.46, ty: 1.5, h: 0.62 }
+    match.player.meetX = null
     triggerAnim(match.player, 'idle', 'L', match.simTime)
     triggerAnim(match.ai, 'idle', 'R', match.simTime)
   }
@@ -113,10 +115,23 @@ export function createMatch(session, fx, audio) {
     match.pending = null
     match.trail = []
     match.ball = sampleShot(shot, 0)
+    match.player.meetX = target === 'player' ? meetX(shot, aimSide(shot), 1) : null
     if (target === 'player') {
       tallyKind('seen')
       if (shot.kind === 'spin') match.spinsUsed += 1
     }
+  }
+
+  function aimSide(shot) {
+    if (shot.expectedSide === 'L' || shot.expectedSide === 'R') return shot.expectedSide
+    return match.player.side
+  }
+
+  // Where the body must stand so the paddle, not the torso, meets the ball.
+  function meetX(shot, side, progress) {
+    const at = sampleShot(shot, Math.max(0, progress))
+    const screen = project(at.tx, at.ty, at.h)
+    return Math.max(60, Math.min(460, screen.x - paddleOffsetX(side)))
   }
 
   function update(dt) {
@@ -211,6 +226,12 @@ export function createMatch(session, fx, audio) {
       resolved: false,
       // Captured at the press. A swing started before the bounce can still be early.
       afterBounce: Boolean(match.shot.bounced),
+    }
+    const shot = match.shot
+    const sideOk = !shot || shot.expectedSide === 'any' || side === shot.expectedSide
+    if (shot && match.target === 'player' && sideOk) {
+      const progress = (match.pending.contactAt - shot.startTime - shot.delay) / shot.flightTime
+      match.player.meetX = meetX(shot, side, progress)
     }
   }
 

@@ -1,7 +1,8 @@
-import { VIEW, project, tableCorners } from './ball.js?v=19'
-import { drawActor } from './stickman.js?v=19'
-import { tuning, currentTier, orderedWindows } from './tuning.js?v=19'
-import { arrivalTime } from './ball.js?v=19'
+import { VIEW, project, tableCorners } from './ball.js?v=30'
+import { drawActor } from './stickman.js?v=30'
+import { chickenReady } from './chicken.js?v=30'
+import { tuning, currentTier, orderedWindows } from './tuning.js?v=30'
+import { arrivalTime } from './ball.js?v=30'
 
 const FONT = '"Arial Black", "Segoe UI", system-ui, sans-serif'
 
@@ -27,10 +28,9 @@ export function render(ctx, match, fx) {
 
   drawFootShadow(ctx, match.ai)
   drawActor(ctx, match.ai, theme.ink)
-  drawFootShadow(ctx, match.player)
-  drawActor(ctx, match.player, theme.ink)
-
+  if (!chickenReady()) drawFootShadow(ctx, match.player)
   if (match.ball) drawBall(ctx, match, fx, theme)
+  drawActor(ctx, match.player, theme.ink)
 
   for (const p of fx.particles) {
     ctx.globalAlpha = Math.max(0, p.life / p.max)
@@ -137,7 +137,7 @@ function paintTable(ctx, theme) {
   ctx.lineTo(c.nearC.x, c.nearC.y)
   ctx.stroke()
 
-  const netH = 16
+  const netH = 22
   ctx.beginPath()
   ctx.moveTo(c.midL.x, c.midL.y - netH)
   ctx.lineTo(c.midL.x, c.midL.y)
@@ -252,12 +252,13 @@ function ballFill(match) {
 }
 
 function drawFootShadow(ctx, actor) {
+  const size = actor.role === 'opponent' ? 0.78 : 1
   ctx.save()
-  ctx.translate(actor.x, actor.y + 58)
+  ctx.translate(actor.x, actor.y + 58 * size)
   ctx.scale(1, 0.28)
   ctx.fillStyle = 'rgba(0,0,0,0.12)'
   ctx.beginPath()
-  ctx.arc(0, 0, 28, 0, Math.PI * 2)
+  ctx.arc(0, 0, 28 * size, 0, Math.PI * 2)
   ctx.fill()
   ctx.restore()
 }
@@ -413,7 +414,7 @@ function drawResult(ctx, match) {
   ctx.fillText((tier ? tier.name : '').toUpperCase(), VIEW.cx, 548)
   ctx.globalAlpha = 0.7
   ctx.font = `800 15px ${FONT}`
-  ctx.fillText('НАЖМИ, ЧТОБЫ СЫГРАТЬ ЕЩЁ', VIEW.cx, 590)
+  ctx.fillText('НАЖМИ, ЧТОБЫ СЫГРАТЬ ЕЩЁ', VIEW.cx, 648)
   ctx.globalAlpha = 1
 }
 

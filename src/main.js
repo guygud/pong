@@ -1,11 +1,12 @@
-import { loadTuning, tuning, saveTuning } from './tuning.js?v=19'
-import { createFx, updateFx } from './fx.js?v=19'
-import { audio } from './audio.js?v=19'
-import { createSession, createMatch } from './match.js?v=19'
-import { bindInput } from './input.js?v=19'
-import { render } from './render.js?v=19'
-import { mountDebug } from './debug.js?v=19'
-import { VIEW, project } from './ball.js?v=19'
+import { loadTuning, tuning, saveTuning } from './tuning.js?v=30'
+import { createFx, updateFx } from './fx.js?v=30'
+import { audio } from './audio.js?v=30'
+import { createSession, createMatch } from './match.js?v=30'
+import { bindInput } from './input.js?v=30'
+import { render } from './render.js?v=30'
+import { mountDebug } from './debug.js?v=30'
+import { VIEW, project } from './ball.js?v=30'
+import { loadChicken } from './chicken.js?v=30'
 
 loadTuning()
 
@@ -18,6 +19,7 @@ canvas.width = VIEW.w * dpr
 canvas.height = VIEW.h * dpr
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 ctx.imageSmoothingEnabled = true
+loadChicken(ctx)
 
 const fx = createFx()
 const session = createSession()
@@ -124,6 +126,13 @@ function drawPaused(context) {
   context.textBaseline = 'middle'
   context.fillText('ПАУЗА', VIEW.w / 2, VIEW.h / 2)
   context.restore()
+}
+
+if (new URLSearchParams(location.search).get('clip')) {
+  held = true
+  match.phase = 'clip'
+  match.ball = null
+  match.message = ''
 }
 
 window.__pong = {

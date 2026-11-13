@@ -6,14 +6,16 @@ export const VIEW = {
   w: 540,
   h: 960,
   cx: 270,
-  farY: 356,
-  nearY: 590,
-  farHalf: 116,
-  nearHalf: 196,
+  // Matched to the reference camera: a longer table, with a milder taper.
+  farY: 248,
+  nearY: 586,
+  farHalf: 124,
+  nearHalf: 156,
 }
 
 // Where a shot is struck, just off each baseline, so the paddle and the ball meet.
-export const RECEIVE_TY = { player: -1.84, ai: 1.44 }
+// Tuned so the screen height of each receive stays on the paddle after the camera move.
+export const RECEIVE_TY = { player: -1.6, ai: 1.1 }
 
 const lerp = (a, b, t) => a + (b - a) * t
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
@@ -91,7 +93,7 @@ export function project(tx, ty, h = 0) {
   const x = VIEW.cx + tx * half
   const depth = clamp(t, 0, 1)
   const lift = h * lerp(158, 96, depth)
-  const scale = lerp(1, 0.66, depth)
+  const scale = lerp(1, 0.55, depth)
   return { x, y: y - lift, shadowX: x, shadowY: y, scale, depth }
 }
 
