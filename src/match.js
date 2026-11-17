@@ -1,9 +1,10 @@
-import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=30'
-import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=30'
-import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=30'
-import { createActor, triggerAnim, updateActor } from './stickman.js?v=30'
-import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=30'
-import { paddleOffsetX } from './chicken.js?v=30'
+import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=33'
+import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=33'
+import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=33'
+import { createActor, triggerAnim, updateActor } from './stickman.js?v=33'
+import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=33'
+import { paddleOffsetX } from './chicken.js?v=33'
+import { enemyHitLead } from './enemy.js?v=33'
 
 export function createSession() {
   return {
@@ -85,6 +86,7 @@ export function createMatch(session, fx, audio) {
     refillStamina()
     match.ball = { tx: 0.46, ty: 1.5, h: 0.62 }
     match.player.meetX = null
+    match.servePlan = null
     triggerAnim(match.player, 'idle', 'L', match.simTime)
     triggerAnim(match.ai, 'idle', 'R', match.simTime)
   }
@@ -93,12 +95,25 @@ export function createMatch(session, fx, audio) {
     match.rallyHits = 0
     match.rallySpeed = 1
     refillStamina()
-    const plan = planServe(currentTier(), match.spinsUsed)
+    const plan = match.servePlan || planServe(currentTier(), match.spinsUsed)
+    match.servePlan = null
     match.aiSide = plan.side
-    triggerAnim(match.ai, 'swing', plan.side, match.simTime)
+    // The windup may already be running, started so its hit event lands now.
+    if (match.ai.clip !== 'swing') triggerAnim(match.ai, 'swing', plan.side, match.simTime)
+    else match.ai.side = plan.side
     triggerAnim(match.player, 'idle', match.playerSide, match.simTime)
     launch(plan.shot, 'player')
     audio.serve()
+  }
+
+  // Starts the serve windup early enough that the clip's hit event is the toss.
+  function warmServe() {
+    if (!match.servePlan && match.count === 1) match.servePlan = planServe(currentTier(), match.spinsUsed)
+    if (!match.servePlan || match.ai.clip === 'swing') return
+    const lead = enemyHitLead(match.servePlan.side, match.ai.tired)
+    if (!lead) return
+    const untilServe = match.messageT + Math.max(0, match.count - 1) * match.readyTick
+    if (untilServe <= lead) triggerAnim(match.ai, 'swing', match.servePlan.side, match.simTime)
   }
 
   function launch(shot, target) {
@@ -136,6 +151,8 @@ export function createMatch(session, fx, audio) {
 
   function update(dt) {
     match.simTime += dt
+    const staminaMax = match.aiStaminaMax || currentTier().stamina || 1
+    match.ai.tired = match.aiStamina / staminaMax <= (tuning.stamina.lowAt ?? 0.33)
     updateActor(match.player, dt)
     updateActor(match.ai, dt)
     match.flash = Math.max(0, match.flash - dt * 3.2)
@@ -144,6 +161,7 @@ export function createMatch(session, fx, audio) {
     match.darken += (darkTarget - match.darken) * Math.min(1, dt * 9)
 
     if (match.phase === 'ready') {
+      warmServe()
       match.messageT -= dt
       if (match.messageT <= 0) {
         match.count -= 1
@@ -191,11 +209,11 @@ export function createMatch(session, fx, audio) {
     if (match.phase !== 'flight') return
 
     if (match.target === 'ai' && shot.aiDecision) {
-      const lead = tuning.contactDelay
-      const swingAt = 1 - lead / shot.flightTime
-      if (!shot.aiSwung && progress >= swingAt) {
+      const decision = shot.aiDecision
+      const lead = enemyHitLead(decision.side, match.ai.tired) ?? tuning.contactDelay
+      const swingAt = 1 - lead / Math.max(0.05, shot.flightTime)
+      if (!shot.aiSwung && progress >= Math.max(0, swingAt)) {
         shot.aiSwung = true
-        const decision = shot.aiDecision
         match.aiSide = decision.side
         triggerAnim(match.ai, decision.hit ? 'swing' : 'fall', decision.side, match.simTime)
       }

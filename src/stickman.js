@@ -1,5 +1,6 @@
-import { tuning } from './tuning.js?v=30'
-import { drawChicken, syncChicken } from './chicken.js?v=30'
+import { tuning } from './tuning.js?v=33'
+import { drawChicken, syncChicken } from './chicken.js?v=33'
+import { drawEnemy, syncEnemy, enemySwingSpan } from './enemy.js?v=33'
 
 // Hip positions. Legs hang ~60px below the hip; the head sits ~80px above it.
 const STANCE = {
@@ -214,10 +215,14 @@ export function triggerAnim(actor, name, side, simTime) {
 export function updateActor(actor, dt) {
   const clip = CLIPS[actor.role][actor.clip]
   actor.clipTime += dt * actor.clipRate
+  // The enemy clip is longer than the stick swing. Keep it up through its own
+  // follow-through instead of cutting back to idle at the stick key.
+  const span = enemySwingSpan(actor)
+  const limit = span > 0 ? span * actor.clipRate : clip.dur
   if (clip.loop) {
     actor.clipTime %= clip.dur
-  } else if (actor.clipTime >= clip.dur) {
-    actor.clipTime = clip.dur
+  } else if (actor.clipTime >= limit) {
+    actor.clipTime = limit
     if (!actor.hold) triggerAnim(actor, 'idle')
   }
   const poseNow = samplePose(actor)
@@ -232,6 +237,7 @@ export function updateActor(actor, dt) {
   actor.bob += dt
   actor.pose = poseNow
   syncChicken(actor, dt)
+  syncEnemy(actor, dt)
 }
 
 function samplePose(actor) {
@@ -268,6 +274,7 @@ function limb(ctx, ox, oy, deg, len1, bendDeg, len2) {
 
 export function drawActor(ctx, actor, ink) {
   if (drawChicken(ctx, actor)) return
+  if (drawEnemy(ctx, actor)) return
   const p = actor.pose || samplePose(actor)
   const bob = actor.clip === 'idle' ? Math.sin(actor.bob * 3.2) * 2.2 : 0
   const size = actor.role === 'opponent' ? 0.78 : 1

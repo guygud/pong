@@ -1,12 +1,13 @@
-import { loadTuning, tuning, saveTuning } from './tuning.js?v=30'
-import { createFx, updateFx } from './fx.js?v=30'
-import { audio } from './audio.js?v=30'
-import { createSession, createMatch } from './match.js?v=30'
-import { bindInput } from './input.js?v=30'
-import { render } from './render.js?v=30'
-import { mountDebug } from './debug.js?v=30'
-import { VIEW, project } from './ball.js?v=30'
-import { loadChicken } from './chicken.js?v=30'
+import { loadTuning, tuning, saveTuning } from './tuning.js?v=33'
+import { createFx, updateFx } from './fx.js?v=33'
+import { audio } from './audio.js?v=33'
+import { createSession, createMatch } from './match.js?v=33'
+import { bindInput } from './input.js?v=33'
+import { render } from './render.js?v=33'
+import { mountDebug } from './debug.js?v=33'
+import { VIEW, project } from './ball.js?v=33'
+import { loadChicken } from './chicken.js?v=33'
+import { loadEnemy } from './enemy.js?v=33'
 
 loadTuning()
 
@@ -20,6 +21,7 @@ canvas.height = VIEW.h * dpr
 ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 ctx.imageSmoothingEnabled = true
 loadChicken(ctx)
+loadEnemy(ctx)
 
 const fx = createFx()
 const session = createSession()

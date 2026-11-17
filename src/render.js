@@ -1,8 +1,9 @@
-import { VIEW, project, tableCorners } from './ball.js?v=30'
-import { drawActor } from './stickman.js?v=30'
-import { chickenReady } from './chicken.js?v=30'
-import { tuning, currentTier, orderedWindows } from './tuning.js?v=30'
-import { arrivalTime } from './ball.js?v=30'
+import { VIEW, project, tableCorners } from './ball.js?v=33'
+import { drawActor } from './stickman.js?v=33'
+import { chickenReady } from './chicken.js?v=33'
+import { enemyReady } from './enemy.js?v=33'
+import { tuning, currentTier, orderedWindows } from './tuning.js?v=33'
+import { arrivalTime } from './ball.js?v=33'
 
 const FONT = '"Arial Black", "Segoe UI", system-ui, sans-serif'
 
@@ -26,7 +27,7 @@ export function render(ctx, match, fx) {
     drawMarker(ctx, match, theme)
   }
 
-  drawFootShadow(ctx, match.ai)
+  if (!enemyReady()) drawFootShadow(ctx, match.ai)
   drawActor(ctx, match.ai, theme.ink)
   if (!chickenReady()) drawFootShadow(ctx, match.player)
   if (match.ball) drawBall(ctx, match, fx, theme)
