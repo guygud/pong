@@ -1,4 +1,4 @@
-import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js?v=51'
+import { tuning, currentTier, saveTuning, resetTuning } from './tuning.js?v=53'
 
 const GLOBALS = [
   ['windows.perfect', 'Идеально, ±мс', 20, 160, 1],
