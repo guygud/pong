@@ -20,7 +20,7 @@ const samples = {
     impacts: [0.065, 0.16, 0.248, 0.332, 0.411, 0.481, 0.547, 0.61, 0.669, 0.724, 0.776, 1.042, 1.188],
   },
   crowdLoss: { file: 'sfxmint-crowd-aww-02.mp3', offset: 0, gain: 0.45, tail: 0.95, fadeAfter: 0.65 },
-  crowdWin: { file: 'sfxmint-crowd-applause-44.mp3', offset: 0, gain: 0.5, tail: 1.35, fadeAfter: 1.0 },
+  crowdWin: { file: 'sfxmint-crowd-applause-44.mp3?v=51', offset: 0, gain: 0.65, tail: 1.35, naturalTail: true },
 }
 
 function loadSamples(ctx) {
@@ -57,6 +57,10 @@ function playSample(sample, volume = 1) {
       gain.gain.setValueAtTime(level, t + 0.012)
       gain.gain.exponentialRampToValueAtTime(quiet, t + 0.03)
     }
+  } else if (sample.naturalTail) {
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(level, now + 0.008)
+    gain.gain.setValueAtTime(level, end - 0.02)
   } else {
     gain.gain.setValueAtTime(level, now)
     gain.gain.setValueAtTime(level, now + (sample.fadeAfter ?? 0.024))

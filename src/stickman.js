@@ -1,7 +1,7 @@
-import { tuning } from './tuning.js?v=44'
-import { VIEW } from './ball.js?v=44'
-import { drawChicken, syncChicken } from './chicken.js?v=44'
-import { drawEnemy, syncEnemy, enemySwingSpan } from './enemy.js?v=44'
+import { tuning } from './tuning.js?v=51'
+import { VIEW } from './ball.js?v=51'
+import { drawChicken, syncChicken } from './chicken.js?v=51'
+import { drawEnemy, syncEnemy, enemySwingSpan } from './enemy.js?v=51'
 
 // Hip positions. The opponent takes one step from the middle of the far
 // baseline; the body then reaches the end of the table.

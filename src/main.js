@@ -1,13 +1,13 @@
-import { loadTuning, tuning, saveTuning } from './tuning.js?v=44'
-import { createFx, updateFx } from './fx.js?v=44'
-import { audio } from './audio.js?v=44'
-import { createSession, createMatch } from './match.js?v=44'
-import { bindInput } from './input.js?v=44'
-import { render } from './render.js?v=44'
-import { mountDebug } from './debug.js?v=44'
-import { VIEW, project } from './ball.js?v=44'
-import { loadChicken } from './chicken.js?v=44'
-import { loadEnemy } from './enemy.js?v=44'
+import { loadTuning, tuning, saveTuning } from './tuning.js?v=51'
+import { createFx, updateFx } from './fx.js?v=51'
+import { audio } from './audio.js?v=51'
+import { createSession, createMatch } from './match.js?v=51'
+import { bindInput } from './input.js?v=51'
+import { render } from './render.js?v=51'
+import { mountDebug } from './debug.js?v=51'
+import { VIEW, project } from './ball.js?v=51'
+import { loadChicken } from './chicken.js?v=51'
+import { loadEnemy } from './enemy.js?v=51'
 
 loadTuning()
 
