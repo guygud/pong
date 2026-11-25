@@ -1,11 +1,18 @@
-import { tuning } from './tuning.js?v=33'
-import { drawChicken, syncChicken } from './chicken.js?v=33'
-import { drawEnemy, syncEnemy, enemySwingSpan } from './enemy.js?v=33'
+import { tuning } from './tuning.js?v=44'
+import { VIEW } from './ball.js?v=44'
+import { drawChicken, syncChicken } from './chicken.js?v=44'
+import { drawEnemy, syncEnemy, enemySwingSpan } from './enemy.js?v=44'
 
-// Hip positions. Legs hang ~60px below the hip; the head sits ~80px above it.
+// Hip positions. The opponent takes one step from the middle of the far
+// baseline; the body then reaches the end of the table.
+const OPPONENT_STEP = 78
 const STANCE = {
   player: { L: { x: 148, y: 748 }, R: { x: 392, y: 748 } },
-  opponent: { L: { x: 176, y: 196 }, R: { x: 364, y: 196 } },
+  opponent: {
+    C: { x: VIEW.cx, y: 196 },
+    L: { x: VIEW.cx - OPPONENT_STEP, y: 196 },
+    R: { x: VIEW.cx + OPPONENT_STEP, y: 196 },
+  },
 }
 
 const STRIKE_AT = 0.09
@@ -177,7 +184,7 @@ function smooth(u) {
 
 export function createActor(role) {
   const home = STANCE[role]
-  const side = role === 'player' ? 'L' : 'R'
+  const side = role === 'player' ? 'L' : 'C'
   const actor = {
     role,
     side,
@@ -229,8 +236,9 @@ export function updateActor(actor, dt) {
   const home = actor.home[actor.side]
   const goalX = actor.meetX != null ? actor.meetX : home.x
   const goalY = home.y + actor.lungeDir * poseNow.lunge + poseNow.hop + poseNow.drop
-  // The player walks across during the flight. The swing itself closes the last gap.
-  const follow = actor.role !== 'player' ? 18 : actor.clip === 'swing' ? 16 : 5
+  // The player walks across during the flight. The opponent takes one step,
+  // slow enough that the attack plays after the feet have arrived.
+  const follow = actor.role !== 'player' ? 7 : actor.clip === 'swing' ? 16 : 5
   const k = Math.min(1, dt * follow)
   actor.x += (goalX - actor.x) * k
   actor.y += (goalY - actor.y) * k

@@ -1,10 +1,10 @@
-import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=33'
-import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=33'
-import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=33'
-import { createActor, triggerAnim, updateActor } from './stickman.js?v=33'
-import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=33'
-import { paddleOffsetX } from './chicken.js?v=33'
-import { enemyHitLead } from './enemy.js?v=33'
+import { tuning, currentTier, orderedWindows, saveTuning } from './tuning.js?v=44'
+import { createShot, sampleShot, shotProgress, arrivalTime, project } from './ball.js?v=44'
+import { planServe, buildPlayerShot, planReturn, nextStamina } from './ai.js?v=44'
+import { createActor, triggerAnim, updateActor } from './stickman.js?v=44'
+import { spawnHit, spawnWhiff, spawnBounce } from './fx.js?v=44'
+import { paddleOffsetX } from './chicken.js?v=44'
+import { enemyHitLead } from './enemy.js?v=44'
 
 export function createSession() {
   return {
@@ -88,7 +88,7 @@ export function createMatch(session, fx, audio) {
     match.player.meetX = null
     match.servePlan = null
     triggerAnim(match.player, 'idle', 'L', match.simTime)
-    triggerAnim(match.ai, 'idle', 'R', match.simTime)
+    triggerAnim(match.ai, 'idle', 'C', match.simTime)
   }
 
   function startServe() {
@@ -108,7 +108,10 @@ export function createMatch(session, fx, audio) {
 
   // Starts the serve windup early enough that the clip's hit event is the toss.
   function warmServe() {
-    if (!match.servePlan && match.count === 1) match.servePlan = planServe(currentTier(), match.spinsUsed)
+    if (!match.servePlan && match.count === 1) {
+      match.servePlan = planServe(currentTier(), match.spinsUsed)
+      match.ai.side = match.servePlan.side
+    }
     if (!match.servePlan || match.ai.clip === 'swing') return
     const lead = enemyHitLead(match.servePlan.side, match.ai.tired)
     if (!lead) return
@@ -207,6 +210,10 @@ export function createMatch(session, fx, audio) {
     }
 
     if (match.phase !== 'flight') return
+
+    if (match.phase === 'flight' && match.target === 'player' && match.ai.clip !== 'swing') {
+      match.ai.side = 'C'
+    }
 
     if (match.target === 'ai' && shot.aiDecision) {
       const decision = shot.aiDecision
@@ -333,6 +340,9 @@ export function createMatch(session, fx, audio) {
       max: match.aiStaminaMax,
       spinsUsed: match.spinsUsed,
     })
+    // Step toward that side as soon as the ball is on its way, so the attack
+    // plays with the feet already planted.
+    match.ai.side = shot.aiDecision.side
     const screen = project(at.tx, at.ty, at.h)
     spawnHit(fx, quality, screen.x, screen.y)
     fx.hitStop = (tuning.hitStop[quality] || 0) / 1000
@@ -415,6 +425,7 @@ export function createMatch(session, fx, audio) {
     triggerAnim(match.player, 'cheer', match.playerSide, match.simTime)
     triggerAnim(match.ai, 'fall', match.aiSide, match.simTime)
     audio.point(true)
+    audio.crowd?.(true)
   }
 
   function losePoint() {
@@ -430,6 +441,7 @@ export function createMatch(session, fx, audio) {
     triggerAnim(match.player, 'fall', match.playerSide, match.simTime)
     triggerAnim(match.ai, 'cheer', match.aiSide, match.simTime)
     audio.point(false)
+    audio.crowd?.(false)
   }
 
   function finish(playerWon) {

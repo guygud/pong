@@ -7,13 +7,13 @@ import {
   AnimationStateData,
   SkeletonRenderer,
   Physics,
-} from '../vendor/spine-canvas.mjs?v=33'
+} from '../vendor/spine-canvas.mjs?v=44'
 
-// Same rig size as the player. Drawn smaller so the soles land on the far
-// baseline and the comb stays clear of the score.
-const SCALE = 0.08
+// Large enough that one step from the middle puts the body on the end
+// of the far baseline. Soles sit on that line.
+const SCALE = 0.1
 const FOOT_SPINE_Y = 8
-const FEET_BELOW_HIP = 44
+const FEET_BELOW_HIP = 56
 const WALK_DISTANCE = 12
 
 const ASSETS = 'chiken_enemy_exp_v1.0.2_test/'
@@ -40,7 +40,14 @@ export function loadEnemy(ctx) {
       sk.scaleX = 1
       sk.scaleY = 1
       const stateData = new AnimationStateData(data)
-      stateData.defaultMix = 0
+      // Idle and walk can ease. Anything into a swing is instant: a mix here
+      // covers the whole short windup and the attack never reads.
+      stateData.defaultMix = 0.04
+      for (const from of data.animations) {
+        for (const attack of ['attack', 'attack_2', 'tired/attack', 'tired/attack_2']) {
+          stateData.setMix(from.name, attack, 0)
+        }
+      }
       state = new AnimationState(stateData)
       renderer = new SkeletonRenderer(ctx)
       renderer.triangleRendering = true
