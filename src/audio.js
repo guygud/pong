@@ -19,7 +19,7 @@ const samples = {
     tail: 1.24,
     impacts: [0.065, 0.16, 0.248, 0.332, 0.411, 0.481, 0.547, 0.61, 0.669, 0.724, 0.776, 1.042, 1.188],
   },
-  crowdLoss: { file: 'sfxmint-crowd-aww-02.mp3', offset: 0, gain: 0.3825, tail: 1.72, fadeAfter: 0.55, linearFade: true },
+  crowdLoss: { file: 'sfxmint-crowd-aww-02.mp3', offset: 0, gain: 0.26775, tail: 1.72, fadeAfter: 0.55, linearFade: true },
   crowdWin: { file: 'sfxmint-crowd-applause-44.mp3?v=51', offset: 0, gain: 0.65, tail: 1.35, naturalTail: true },
 }
 

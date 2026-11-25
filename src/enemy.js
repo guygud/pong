@@ -7,7 +7,7 @@ import {
   AnimationStateData,
   SkeletonRenderer,
   Physics,
-} from '../vendor/spine-canvas.mjs?v=53'
+} from '../vendor/spine-canvas.mjs?v=54'
 
 // Large enough that one step from the middle puts the body on the end
 // of the far baseline. Soles sit on that line.
