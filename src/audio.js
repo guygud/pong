@@ -7,7 +7,7 @@ const samples = {
   fail: {
     file: 'ball-fail.mp3',
     offset: 0.055,
-    gain: 0.75,
+    gain: 0.45,
     tail: 1.12,
     // Starts of the individual bounces in the original recording.
     impacts: [0.065, 0.16, 0.248, 0.332, 0.411, 0.481, 0.547, 0.61, 0.669, 0.724, 0.776, 0.825, 0.87, 1.011],
@@ -19,7 +19,7 @@ const samples = {
     tail: 1.24,
     impacts: [0.065, 0.16, 0.248, 0.332, 0.411, 0.481, 0.547, 0.61, 0.669, 0.724, 0.776, 1.042, 1.188],
   },
-  crowdLoss: { file: 'sfxmint-crowd-aww-02.mp3', offset: 0, gain: 0.26775, tail: 1.72, fadeAfter: 0.55, linearFade: true },
+  crowdLoss: { file: 'sfxmint-crowd-aww-02.mp3', offset: 0, gain: 0.048, tail: 1.72, fadeAfter: 0.55, linearFade: true },
   crowdWin: { file: 'sfxmint-crowd-applause-44.mp3?v=51', offset: 0, gain: 0.65, tail: 1.35, naturalTail: true },
 }
 
@@ -194,7 +194,7 @@ export const audio = {
       tone(523, 0.1, 'triangle', 0.07)
       setTimeout(() => tone(784, 0.16, 'triangle', 0.07), 90)
     } else if (!playSample(samples.fail)) {
-      tone(196, 0.14, 'sawtooth', 0.04, 0.6)
+      tone(196, 0.14, 'sawtooth', 0.024, 0.6)
     }
   },
 }

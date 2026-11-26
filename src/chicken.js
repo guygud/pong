@@ -7,7 +7,7 @@ import {
   AnimationStateData,
   SkeletonRenderer,
   Physics,
-} from '../vendor/spine-canvas.mjs?v=54'
+} from '../vendor/spine-canvas.mjs?v=58'
 
 // Spine units. Feet sit near y=55, the paddle rests near y=1000.
 const SCALE = 0.13
